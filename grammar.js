@@ -15,261 +15,188 @@ module.exports = grammar({
   name: "pug",
   externals: ($) => [$._newline, $._indent, $._dedent],
   rules: {
-    source_file: ($) => repeat(
-      choice(
-        $.conditional,
-        $.comment,
-        $.script_block,
-        $.tag,
-        $.doctype,
-        $.unbuffered_code,
-        $.buffered_code,
-        $.unescaped_buffered_code,
-        $.case,
-        $.pipe,
-        $.filter,
-        $.block_definition,
-        $.block_append,
-        $.block_prepend,
-        $.extends,
-        $.mixin_definition,
-        $.mixin_use,
-        $.each,
-        $.while,
-        $.include,
+    source_file: ($) =>
+      repeat(
+        choice(
+          $.conditional,
+          $.comment,
+          $.script_block,
+          $.tag,
+          $.doctype,
+          $.unbuffered_code,
+          $.buffered_code,
+          $.unescaped_buffered_code,
+          $.case,
+          $.pipe,
+          $.filter,
+          $.block_definition,
+          $.block_append,
+          $.block_prepend,
+          $.extends,
+          $.mixin_definition,
+          $.mixin_use,
+          $.each,
+          $.while,
+          $.include
+        )
       ),
-    ),
     doctype: ($) =>
       seq("doctype", alias(choice("html", "strict", "xml"), $.doctype_name)),
-    pipe: ($) =>
-      seq("|", optional($._content_or_javascript), $._newline),
+    pipe: ($) => seq("|", optional($._content_or_javascript), $._newline),
 
     include: ($) =>
       seq(
-        alias('include', $.keyword),
+        alias("include", $.keyword),
         optional($.filter),
-        alias(/[^\n]+/, $.filename),
+        alias(/[^\n]+/, $.filename)
       ),
 
     while: ($) =>
       seq(
-        alias('while', $.keyword),
+        alias("while", $.keyword),
         $.iteration_iterator,
         $._newline,
-        $.children,
+        $.children
       ),
 
-    _each_js: ($) =>
-      alias(/[\w_]+/, $.javascript),
+    _each_js: ($) => alias(/[\w_]+/, $.javascript),
 
-    iteration_variable: ($) =>
-      seq(
-        $._each_js,
-        optional(
-          seq(
-            ',',
-            $._each_js,
-          ),
-        ),
-      ),
+    iteration_variable: ($) => seq($._each_js, optional(seq(",", $._each_js))),
 
-    iteration_iterator: ($) =>
-      alias(/[^\n]+/, $.javascript),
+    iteration_iterator: ($) => alias(/[^\n]+/, $.javascript),
 
-    _each_else: ($) =>
-      seq(
-        alias('else', $.keyword),
-        $._newline,
-        $.children,
-      ),
+    _each_else: ($) => seq(alias("else", $.keyword), $._newline, $.children),
 
     each: ($) =>
       prec.right(
         seq(
-          alias(choice('each', 'for'), $.keyword),
+          alias(choice("each", "for"), $.keyword),
           $.iteration_variable,
-          alias('in', $.keyword),
+          alias("in", $.keyword),
           $.iteration_iterator,
           $._newline,
           $.children,
-          alias(
-            optional(
-              $._each_else
-            ),
-            $.else
-          ),
-        ),
+          alias(optional($._each_else), $.else)
+        )
       ),
 
     mixin_use: ($) =>
       seq(
-        '+',
+        "+",
         alias($.tag_name, $.mixin_name),
         optional(
           seq(
-            '(',
+            "(",
             optional(
               seq(
-                repeat(
-                  seq(
-                    alias($._pug_attributes, $.attribute),
-                    ',',
-                  )
-                ),
-                alias($._pug_attributes, $.attribute),
+                repeat(seq(alias($._pug_attributes, $.attribute), ",")),
+                alias($._pug_attributes, $.attribute)
               )
             ),
-            ')',
-          ),
-        ),
+            ")"
+          )
+        )
       ),
     mixin_definition: ($) =>
       seq(
-        alias('mixin', $.keyword),
+        alias("mixin", $.keyword),
         alias($.tag_name, $.mixin_name),
         optional($.mixin_attributes),
         $._newline,
-        $.children,
+        $.children
       ),
     mixin_attributes: ($) =>
       seq(
-        '(',
+        "(",
         optional(
           seq(
-            repeat(
-              seq(
-                alias(/\w+/, $.attribute_name),
-                ',',
-              )
-            ),
-            alias(/\w+/, $.attribute_name),
+            repeat(seq(alias(/\w+/, $.attribute_name), ",")),
+            alias(/\w+/, $.attribute_name)
           )
         ),
-        ')',
+        ")"
       ),
 
     _block_content: ($) =>
       prec.left(
         seq(
           alias($.tag_name, $.block_name),
-          optional(
-            seq(
-              $._newline,
-              $.children,
-            )
-          ),
-        ),
+          optional(seq($._newline, $.children))
+        )
       ),
-    block_definition: ($) =>
-      seq(
-        alias('block', $.keyword),
-        $._block_content,
-      ),
+    block_definition: ($) => seq(alias("block", $.keyword), $._block_content),
     block_append: ($) =>
       seq(
-        alias(optional('block'), $.keyword),
-        alias('append', $.keyword),
-        $._block_content,
+        alias(optional("block"), $.keyword),
+        alias("append", $.keyword),
+        $._block_content
       ),
     block_prepend: ($) =>
       seq(
-        alias(optional('block'), $.keyword),
-        alias('prepend', $.keyword),
-        $._block_content,
+        alias(optional("block"), $.keyword),
+        alias("prepend", $.keyword),
+        $._block_content
       ),
     extends: ($) =>
-      seq(
-        alias('extends', $.keyword),
-        alias(/[^\n]+/, $.filename),
-      ),
+      seq(alias("extends", $.keyword), alias(/[^\n]+/, $.filename)),
 
     filter: ($) =>
       prec.right(
         seq(
-          ':',
+          ":",
           $.filter_name,
           optional($.attributes),
-          optional(
-            alias($.filter_content, $.content),
-          ),
+          optional(alias($.filter_content, $.content))
+        )
       ),
-    ),
     filter_name: () => /[\w-]+/,
     filter_content: ($) =>
       choice(
         $.filter,
-        seq(
-          /( |\t)+/,
-          /[^\n]*/,
-        ),
-        seq(
-          $._newline,
-          $._indent,
-          repeat(
-            seq(
-              /[^\n]*/,
-              $._newline,
-            ),
-          ),
-          $._dedent,
-        )
+        seq(/( |\t)+/, /[^\n]*/),
+        seq($._newline, $._indent, repeat(seq(/[^\n]*/, $._newline)), $._dedent)
       ),
 
     conditional: ($) =>
       seq(
         choice(
           seq(
-            alias(
-              choice(
-                'unless',
-                'if',
-                'else if',
-              ),
-              $.keyword,
-            ),
-            alias($._un_delimited_javascript, $.javascript),
+            alias(choice("unless", "if", "else if"), $.keyword),
+            alias($._un_delimited_javascript, $.javascript)
           ),
-          alias('else', $.keyword),
+          alias("else", $.keyword)
         ),
         $._newline,
-        $.children,
+        $.children
       ),
     case: ($) =>
       prec.right(
         seq(
-          alias('case', $.keyword),
+          alias("case", $.keyword),
           alias($._un_delimited_javascript_line, $.javascript),
           $._newline,
           $._indent,
-          repeat1(
-            $.when,
-          ),
-        ),
+          repeat1($.when)
+        )
       ),
     _when_content: ($) =>
       seq(
         choice(
           // Where the content is on the next line
-          seq(
-            $._newline,
-            $.children,
-          ),
+          seq($._newline, $.children),
           // Where the content follows a : on the same line
-          seq(
-            ':',
-            alias($._dummy_tag, $.children),
-          ),
-        ),
+          seq(":", alias($._dummy_tag, $.children))
+        )
       ),
     _dummy_tag: ($) => $.tag,
     _when_keyword: ($) =>
       choice(
         seq(
-          alias('when', $.keyword),
+          alias("when", $.keyword),
           // `when`s don't work with properly with objects, so removing : from regex is fine.
-          alias(/[^:\n]+?/, $.javascript),
+          alias(/[^:\n]+?/, $.javascript)
         ),
-        alias('default', $.keyword),
+        alias("default", $.keyword)
       ),
     when: ($) =>
       prec.left(
@@ -278,54 +205,33 @@ module.exports = grammar({
           choice(
             $._when_content,
             // There are newlines between each when case, but not the last when
-            $._newline,
+            $._newline
           ),
           optional($._dedent)
-        ),
+        )
       ),
-    unescaped_buffered_code: ($) =>
-      seq(
-        '!=',
-        $._single_line_buf_code,
-      ),
-    buffered_code: ($) =>
-      seq(
-        '=',
-        $._single_line_buf_code,
-      ),
+    unescaped_buffered_code: ($) => seq("!=", $._single_line_buf_code),
+    buffered_code: ($) => seq("=", $._single_line_buf_code),
     script_block: ($) =>
       seq(
-        'script.',
+        "script.",
         $._newline,
         $._indent,
-        alias(
-          repeat1(
-            seq(
-              optional(/[^\n]+/),
-              $._newline,
-            )
-          ),
-          $.javascript
-        ),
-        $._dedent,
+        alias(repeat1(seq(optional(/[^\n]+/), $._newline)), $.javascript),
+        $._dedent
       ),
     tag: ($) =>
       seq(
         choice($.tag_name, $.id, $.class),
         optional(repeat1(choice($.id, $.class))),
         optional($.attributes),
-        optional(alias('/', $.self_close_slash)),
+        optional(alias("/", $.self_close_slash)),
         choice(
           seq(":", $.tag),
           $._content_after_dot,
           seq(
-            optional(
-              seq(
-                $._newline,
-                $._indent,
-              ),
-            ),
-            choice($.buffered_code, $.unescaped_buffered_code),
+            optional(seq($._newline, $._indent)),
+            choice($.buffered_code, $.unescaped_buffered_code)
           ),
           seq(
             optional(seq(" ", $._content_or_javascript)),
@@ -336,12 +242,7 @@ module.exports = grammar({
       ),
     _content_after_dot: ($) =>
       seq(
-        optional(
-          seq(
-            $._newline,
-            $._indent,
-          )
-        ),
+        optional(seq($._newline, $._indent)),
         ".",
         $._newline,
         $._indent,
@@ -349,7 +250,7 @@ module.exports = grammar({
           repeat1(seq(optional($._content_or_javascript), $._newline)),
           $.children
         ),
-        $._dedent,
+        $._dedent
       ),
 
     attributes: ($) =>
@@ -359,100 +260,57 @@ module.exports = grammar({
         optional($.attribute),
         ")"
       ),
-    attribute: ($) =>
-      choice(
-        $._attribute,
-        $._angular_attribute,
-      ),
+    attribute: ($) => choice($._attribute, $._angular_attribute),
     _ternary_attribute_value: ($) =>
       seq(
         alias(
           token(
             seq(
               /[^'"`{\[][^?]+?/,
-              '?',
+              "?",
               /[^)?]+?/,
               choice(
                 /[^ )]*?/,
                 choice(
                   /'(?:[^'\\]|\\.)*'/,
                   /"(?:[^"\\]|\\.)*"/,
-                  /`(?:[^`\\]|\\.)*`/,
-                ),
-              ),
+                  /`(?:[^`\\]|\\.)*`/
+                )
+              )
             )
           ),
           $.javascript
-        ),
+        )
       ),
-    _string_attribute_value: ($) =>
-      $.quoted_attribute_value,
+    _string_attribute_value: ($) => $.quoted_attribute_value,
     _variable_attribute_value: ($) =>
       seq(
         alias(
           // No function calls, nor spaces allowed in javascript attributes
           /[^'"`{\[][^ ,()]+(\([^)]*?\))?/,
           $.javascript
-        ),
+        )
       ),
     _object_attribute_value: ($) =>
-      seq(
-        alias(
-          token(
-            seq(
-              "{",
-              /([^\[\]()]*?(, ?)?)*?/,
-              "}",
-            ),
-          ),
-          $.javascript,
-        ),
-      ),
+      seq(alias(token(seq("{", /([^\[\]()]*?(, ?)?)*?/, "}")), $.javascript)),
     _template_attribute_value: ($) =>
-      seq(
-        alias(
-          token(
-            seq(
-              "`",
-              /(?:[^`\\]|\\.)*/,
-              "`",
-            ),
-          ),
-          $.javascript,
-        ),
-      ),
+      seq(alias(token(seq("`", /(?:[^`\\]|\\.)*/, "`")), $.javascript)),
     _array_attribute_value: ($) =>
-      seq(
-        alias(
-          token(
-            seq(
-              "[",
-              /[^\[\]()]*?/,
-              "]",
-            ),
-          ),
-          $.javascript,
-        ),
+      seq(alias(token(seq("[", /[^\[\]()]*?/, "]")), $.javascript)),
+    _pug_attributes: ($) =>
+      choice(
+        $._string_attribute_value,
+        $._ternary_attribute_value,
+        $._variable_attribute_value,
+        $._array_attribute_value,
+        $._object_attribute_value,
+        $._template_attribute_value
       ),
-      _pug_attributes: ($) =>
-        choice(
-          $._string_attribute_value,
-          $._ternary_attribute_value,
-          $._variable_attribute_value,
-          $._array_attribute_value,
-          $._object_attribute_value,
-          $._template_attribute_value,
-        ),
     _attribute: ($) =>
       seq(
         $.attribute_name,
         optional(repeat1(seq(".", alias(/[\w@\-:]+/, $.attribute_modifier)))),
-        optional(
-          seq(
-            '=',
-            $._pug_attributes
-          )
-        ),
+        optional(seq("=", $._pug_attributes))
       ),
     _angular_attribute: ($) =>
       seq(
@@ -460,16 +318,14 @@ module.exports = grammar({
         optional(seq("=", $.quoted_javascript))
       ),
 
-    children: ($) => prec.right(
-      seq(
-        $._indent,
-        repeat1($._children_choice),
-        optional($._dedent),
+    children: ($) =>
+      prec.right(
+        seq($._indent, repeat1($._children_choice), optional($._dedent))
       ),
-    ),
     // TODO: add all other types of element in here too
     _children_choice: ($) =>
-      prec(1,
+      prec(
+        1,
         choice(
           $.buffered_code,
           $.case,
@@ -489,15 +345,11 @@ module.exports = grammar({
           $.each,
           $.while,
           $.include,
-          $._newline,
-        ),
+          $._newline
+        )
       ),
 
-    comment: ($) =>
-      choice(
-        $._comment,
-        $._comment_not_first_line,
-      ),
+    comment: ($) => choice($._comment, $._comment_not_first_line),
     _comment: ($) =>
       prec.left(
         seq(
@@ -507,29 +359,19 @@ module.exports = grammar({
           optional(
             seq(
               $._indent,
-              repeat1(
-                seq(
-                  $._comment_content,
-                  $._newline,
-                ),
-              ),
-              $._dedent,
-            ),
-          ),
-        ),
+              repeat1(seq($._comment_content, $._newline)),
+              $._dedent
+            )
+          )
+        )
       ),
     _comment_not_first_line: ($) =>
       seq(
         choice("//", "//-"),
         $._newline,
         $._indent,
-        repeat1(
-          seq(
-            $._comment_content,
-            $._newline,
-          ),
-        ),
-        $._dedent,
+        repeat1(seq($._comment_content, $._newline)),
+        $._dedent
       ),
 
     tag_name: () => /\w(?:[-\w]*\w)?/,
@@ -541,7 +383,7 @@ module.exports = grammar({
         /\[[\w@\-:\.]+\]/, // [input]
         /\([\w@\-:\.]+\)/, // (output)
         /\[\([\w@\-:\.]+\)\]/, // [(both)]
-        /\*[\w@\-:\.]+/, // *directive
+        /\*[\w@\-:\.]+/ // *directive
       ),
     attribute_name: () => /#?[\w@\-:]+/,
 
@@ -549,39 +391,25 @@ module.exports = grammar({
       choice(
         seq("'", optional(alias(/(?:[^'\\]|\\.)+/, $.javascript)), "'"),
         seq('"', optional(alias(/(?:[^"\\]|\\.)+/, $.javascript)), '"'),
+        seq("`", optional(alias(/(?:[^"\\]|\\.)+/, $.javascript)), "`")
       ),
     quoted_attribute_value: ($) =>
       choice(
         seq("'", optional(alias(/(?:[^'\\]|\\.)+/, $.attribute_value)), "'"),
         seq('"', optional(alias(/(?:[^"\\]|\\.)+/, $.attribute_value)), '"'),
+        seq("`", optional(alias(/(?:[^"\\]|\\.)+/, $.attribute_value)), "`")
       ),
 
     content: () =>
-      prec.right(
-        repeat1(
-          seq(
-            /[^\n{#]+?/,
-            optional('#'),
-            optional('{')
-          ),
-        ),
-      ),
+      prec.right(repeat1(seq(/[^\n{#]+?/, optional("#"), optional("{")))),
     _comment_content: () => /[^\n]*/,
     _content_or_javascript: ($) =>
       repeat1(
         choice(
-          seq(
-            "#{",
-            alias($._delimited_javascript, $.javascript),
-            "}"
-          ),
-          seq(
-            "{{",
-            alias($._delimited_javascript, $.javascript),
-            "}}"
-          ),
+          seq("#{", alias($._delimited_javascript, $.javascript), "}"),
+          seq("{{", alias($._delimited_javascript, $.javascript), "}}"),
           $.content
-        ),
+        )
       ),
 
     // TODO: can _delimited_javascript and _un_delimited_javascript be merged?
@@ -589,7 +417,8 @@ module.exports = grammar({
     // I only want this node to be exposed sometimes
     _un_delimited_javascript: ($) => $._un_delimited_javascript_line,
     _un_delimited_javascript_line: ($) => /(.)+?/,
-    _un_delimited_javascript_multiline: ($) => repeat1(prec(1, $._un_delimited_javascript_line)),
+    _un_delimited_javascript_multiline: ($) =>
+      repeat1(prec(1, $._un_delimited_javascript_line)),
     _single_line_buf_code: ($) =>
       prec.left(
         seq(
@@ -598,40 +427,27 @@ module.exports = grammar({
             seq(
               $._newline,
               $._indent,
-              repeat1(
-                choice(
-                  $.tag,
-                  $._newline,
-                ),
-              ),
-              $._dedent,
+              repeat1(choice($.tag, $._newline)),
+              $._dedent
             ),
-            $._newline,
+            $._newline
           ),
-          optional($._dedent),
-        ),
+          optional($._dedent)
+        )
       ),
     _multi_line_buf_code: ($) =>
-      alias(seq(
-        $._un_delimited_javascript_multiline,
-      ), $.javascript),
+      alias(seq($._un_delimited_javascript_multiline), $.javascript),
     unbuffered_code: ($) =>
       prec.right(
         seq(
-          '-',
+          "-",
           token.immediate(/( |\t)*/),
           choice(
-            seq(
-              $._single_line_buf_code,
-            ),
-            seq(
-              $._newline,
-              $._indent,
-              $._multi_line_buf_code,
-            ),
+            seq($._single_line_buf_code),
+            seq($._newline, $._indent, $._multi_line_buf_code)
           ),
-          optional($._dedent),
+          optional($._dedent)
         )
-      )
+      ),
   },
 });
